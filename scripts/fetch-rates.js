@@ -130,13 +130,45 @@ Returner KUN et JSON-objekt:
   return obj;
 }
 
+async function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
 async function main() {
-  console.log('Fetching rates via Claude...');
-  const [mortgage, carLoan, student] = await Promise.all([
-    fetchMortgageRates().catch(err => { console.error('mortgage:', err.message); return []; }),
-    fetchCarLoanRates().catch(err => { console.error('car_loan:', err.message); return []; }),
-    fetchStudentLoanRate().catch(err => { console.error('student:', err.message); return null; }),
-  ]);
+  console.log('Fetching rates via Claude (sequentially to avoid rate limits)...');
+
+  console.log('1/3 Fetching mortgage rates...');
+  let mortgage = [];
+  try {
+    mortgage = await fetchMortgageRates();
+    console.log(`  ✅ ${mortgage.length} mortgage rates`);
+  } catch (err) {
+    console.error('  ❌ mortgage:', err.message);
+  }
+
+  console.log('Waiting 15s before next call...');
+  await sleep(15000);
+
+  console.log('2/3 Fetching car loan rates...');
+  let carLoan = [];
+  try {
+    carLoan = await fetchCarLoanRates();
+    console.log(`  ✅ ${carLoan.length} car loan rates`);
+  } catch (err) {
+    console.error('  ❌ car_loan:', err.message);
+  }
+
+  console.log('Waiting 15s before next call...');
+  await sleep(15000);
+
+  console.log('3/3 Fetching student loan rate...');
+  let student = null;
+  try {
+    student = await fetchStudentLoanRate();
+    console.log(`  ✅ student rate: ${student?.floatingRate}%`);
+  } catch (err) {
+    console.error('  ❌ student:', err.message);
+  }
 
   // Build student-loan rate list
   const studentRates = [];
@@ -147,19 +179,31 @@ async function main() {
     if (student.fixedRate10y) studentRates.push({ bank: 'Lånekassen (fast 10 år)', rate: student.fixedRate10y, type: 'fast', ltvMax: 100, requiresProducts: '' });
   }
 
+  // Don't overwrite existing data if all three failed
+  if (!mortgage.length && !carLoan.length && !studentRates.length) {
+    console.error('❌ All fetches failed – keeping existing rates.json');
+    process.exit(1);
+  }
+
+  // If some fetches failed, preserve existing data for those categories
+  let existing = { mortgage: [], car_loan: [], student_loan: [] };
+  try {
+    existing = JSON.parse(require('fs').readFileSync(OUTFILE, 'utf8'));
+    console.log('Loaded existing rates for fallback');
+  } catch (_) {}
+
   const out = {
-    updatedAt: new Date().toISOString(),
-    source:    'Claude API web search (weekly)',
-    mortgage:  mortgage.sort((a, b) => a.rate - b.rate),
-    car_loan:  carLoan.sort((a, b) => a.rate - b.rate),
-    student_loan: studentRates,
+    updatedAt:    new Date().toISOString(),
+    source:       'Claude API web search (weekly)',
+    mortgage:     mortgage.length   ? mortgage.sort((a, b) => a.rate - b.rate)   : existing.mortgage   || [],
+    car_loan:     carLoan.length    ? carLoan.sort((a, b) => a.rate - b.rate)    : existing.car_loan   || [],
+    student_loan: studentRates.length ? studentRates                             : existing.student_loan || [],
   };
 
-  // Ensure data/ exists
   fs.mkdirSync(path.dirname(OUTFILE), { recursive: true });
   fs.writeFileSync(OUTFILE, JSON.stringify(out, null, 2) + '\n');
 
-  console.log(`✅ Wrote ${OUTFILE}: ${mortgage.length} mortgage, ${carLoan.length} car, ${studentRates.length} student`);
+  console.log(`✅ Wrote ${OUTFILE}: ${out.mortgage.length} mortgage, ${out.car_loan.length} car, ${out.student_loan.length} student`);
 }
 
 main().catch(err => {
