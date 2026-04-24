@@ -1,48 +1,65 @@
 {
-  "updatedAt": "2026-04-24T00:00:00Z",
-  "source": "Initial seed (manual, April 2026)",
-  "mortgage": [
-    { "bank": "Bulder Bank",              "rate": 4.77, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Heder Bank",               "rate": 4.99, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Landkreditt Bank",         "rate": 5.04, "type": "flytende", "ltvMax": 85, "requiresProducts": "Landkreditt-medlemskap" },
-    { "bank": "Handelsbanken",            "rate": 5.09, "type": "flytende", "ltvMax": 75, "requiresProducts": "" },
-    { "bank": "Storebrand Bank",          "rate": 5.14, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Rogaland Sparebank",       "rate": 5.19, "type": "flytende", "ltvMax": 85, "requiresProducts": "Lønnskonto hos oss" },
-    { "bank": "Sandnes Sparebank",        "rate": 5.19, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Sparebanken Vest",         "rate": 5.24, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "SpareBank 1 SR-Bank",      "rate": 5.24, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Sbanken (DNB)",            "rate": 5.29, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "KLP Banken",               "rate": 5.29, "type": "flytende", "ltvMax": 85, "requiresProducts": "Offentlig ansatt" },
-    { "bank": "Nordea",                   "rate": 5.34, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "SpareBank 1 Østlandet",    "rate": 5.34, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "SpareBank 1 SMN",          "rate": 5.34, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "SpareBank 1 BV",           "rate": 5.34, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Sparebanken Sør",          "rate": 5.34, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Sparebanken Møre",         "rate": 5.39, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "DNB",                      "rate": 5.44, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Instabank",                "rate": 5.44, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "Sparebank 1 Nord-Norge",   "rate": 5.44, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Spareskillingsbanken",     "rate": 5.49, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "BN Bank",                  "rate": 5.49, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Cultura Bank",             "rate": 5.49, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Komplett Bank",            "rate": 5.54, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "Bank Norwegian",           "rate": 5.59, "type": "flytende", "ltvMax": 85, "requiresProducts": "" },
-    { "bank": "Santander Consumer Bank",  "rate": 5.64, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "Monobank",                 "rate": 5.74, "type": "flytende", "ltvMax": 80, "requiresProducts": "" }
-  ],
+  "updatedAt": "2026-04-24T21:31:03.884Z",
+  "source": "Claude API web search (weekly)",
+  "mortgage": [],
   "car_loan": [
-    { "bank": "Santander Consumer Bank", "rate": 6.95, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "DNB Finans",              "rate": 7.15, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "SpareBank 1 Finans",      "rate": 7.25, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "Nordea Finans",           "rate": 7.35, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "BN Bank",                 "rate": 7.45, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "Ya Bank",                 "rate": 7.75, "type": "flytende", "ltvMax": 80, "requiresProducts": "" },
-    { "bank": "Instabank",               "rate": 7.95, "type": "flytende", "ltvMax": 80, "requiresProducts": "" }
+    {
+      "bank": "SpareBank 1 Østlandet",
+      "rate": 6.2,
+      "type": "flytende",
+      "ltvMax": 65,
+      "requiresProducts": "35% egenkapital"
+    },
+    {
+      "bank": "Nordea Finans",
+      "rate": 6.6,
+      "type": "flytende",
+      "ltvMax": 85,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Santander Consumer Bank",
+      "rate": 7.9,
+      "type": "flytende",
+      "ltvMax": 100,
+      "requiresProducts": "Eksempelrente - individuell prising"
+    },
+    {
+      "bank": "Instabank",
+      "rate": 10.75,
+      "type": "flytende",
+      "ltvMax": 100,
+      "requiresProducts": "Usikret billån (ikke pant)"
+    }
   ],
   "student_loan": [
-    { "bank": "Lånekassen (flytende)",  "rate": 5.15, "type": "flytende", "ltvMax": 100, "requiresProducts": "" },
-    { "bank": "Lånekassen (fast 3 år)", "rate": 5.35, "type": "fast",     "ltvMax": 100, "requiresProducts": "" },
-    { "bank": "Lånekassen (fast 5 år)", "rate": 5.55, "type": "fast",     "ltvMax": 100, "requiresProducts": "" },
-    { "bank": "Lånekassen (fast 10 år)","rate": 5.85, "type": "fast",     "ltvMax": 100, "requiresProducts": "" }
+    {
+      "bank": "Lånekassen (flytende)",
+      "rate": 4.611,
+      "type": "flytende",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Lånekassen (fast 3 år)",
+      "rate": 4.908,
+      "type": "fast",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Lånekassen (fast 5 år)",
+      "rate": 4.889,
+      "type": "fast",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Lånekassen (fast 10 år)",
+      "rate": 4.879,
+      "type": "fast",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    }
   ]
 }
