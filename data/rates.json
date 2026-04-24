@@ -1,62 +1,33 @@
 {
-  "updatedAt": "2026-04-24T21:31:03.884Z",
+  "updatedAt": "2026-04-24T21:40:23.005Z",
   "source": "Claude API web search (weekly)",
   "mortgage": [],
-  "car_loan": [
-    {
-      "bank": "SpareBank 1 Østlandet",
-      "rate": 6.2,
-      "type": "flytende",
-      "ltvMax": 65,
-      "requiresProducts": "35% egenkapital"
-    },
-    {
-      "bank": "Nordea Finans",
-      "rate": 6.6,
-      "type": "flytende",
-      "ltvMax": 85,
-      "requiresProducts": ""
-    },
-    {
-      "bank": "Santander Consumer Bank",
-      "rate": 7.9,
-      "type": "flytende",
-      "ltvMax": 100,
-      "requiresProducts": "Eksempelrente - individuell prising"
-    },
-    {
-      "bank": "Instabank",
-      "rate": 10.75,
-      "type": "flytende",
-      "ltvMax": 100,
-      "requiresProducts": "Usikret billån (ikke pant)"
-    }
-  ],
+  "car_loan": [],
   "student_loan": [
     {
       "bank": "Lånekassen (flytende)",
-      "rate": 4.611,
+      "rate": 4.621,
       "type": "flytende",
       "ltvMax": 100,
       "requiresProducts": ""
     },
     {
       "bank": "Lånekassen (fast 3 år)",
-      "rate": 4.908,
+      "rate": 4.736,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
     },
     {
       "bank": "Lånekassen (fast 5 år)",
-      "rate": 4.889,
+      "rate": 4.745,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
     },
     {
       "bank": "Lånekassen (fast 10 år)",
-      "rate": 4.879,
+      "rate": 4.755,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
