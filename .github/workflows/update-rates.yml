@@ -1,0 +1,39 @@
+name: Update bank rates
+
+on:
+  schedule:
+    # Kjører hver mandag at 07:00 UTC (08:00 Oslo in winter, 09:00 in summer)
+    - cron: '0 7 * * 1'
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  update-rates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch rates via Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/fetch-rates.js
+
+      - name: Commit updated rates
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet data/rates.json; then
+            echo "No changes to rates."
+            exit 0
+          fi
+          git add data/rates.json
+          git commit -m "chore: update bank rates ($(date -u +%Y-%m-%d))"
+          git push
