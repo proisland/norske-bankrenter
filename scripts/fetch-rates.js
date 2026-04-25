@@ -2,14 +2,10 @@
 'use strict';
 
 /**
- * fetch-rates.js
+ * fetch-rates.js — Henter norske bankrenter via Claude API med web search.
  *
- * Called by GitHub Actions daily. Uses Claude API with web search to fetch
- * current Norwegian mortgage, car-loan, and student-loan rates, then writes
- * the result to data/rates.json. The Homey app fetches this file via raw
- * GitHub URL.
- *
- * Requires env var ANTHROPIC_API_KEY.
+ * Kjøres av GitHub Actions ukentlig. Skriver til data/rates.json.
+ * Krever env-variabel ANTHROPIC_API_KEY.
  */
 
 const fs   = require('fs');
@@ -19,27 +15,27 @@ const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL   = 'claude-sonnet-4-5';
 const OUTFILE = path.join(__dirname, '..', 'data', 'rates.json');
 
-const BANKS_MORTGAGE = [
+// Split mortgage banks into two smaller batches to reduce token usage
+const BANKS_A = [
   'Bulder Bank', 'Heder Bank', 'Landkreditt Bank', 'Handelsbanken',
   'Storebrand Bank', 'Rogaland Sparebank', 'Sandnes Sparebank',
-  'Sparebanken Vest', 'SpareBank 1 SR-Bank', 'Sbanken (DNB)',
-  'KLP Banken', 'Nordea', 'SpareBank 1 Østlandet', 'SpareBank 1 SMN',
-  'SpareBank 1 BV', 'Sparebanken Sør', 'Sparebanken Møre', 'DNB',
-  'Instabank', 'Sparebank 1 Nord-Norge', 'Spareskillingsbanken',
-  'BN Bank', 'Cultura Bank', 'Komplett Bank', 'Bank Norwegian',
-  'Santander Consumer Bank', 'Monobank',
+  'Sparebanken Vest', 'SpareBank 1 SR-Bank', 'KLP Banken',
+  'Nordea', 'DNB', 'Instabank', 'BN Bank',
+];
+const BANKS_B = [
+  'SpareBank 1 Østlandet', 'SpareBank 1 SMN', 'SpareBank 1 BV',
+  'Sparebanken Sør', 'Sparebanken Møre', 'Sparebank 1 Nord-Norge',
+  'Spareskillingsbanken', 'Cultura Bank', 'Komplett Bank',
+  'Bank Norwegian', 'Santander Consumer Bank', 'Monobank', 'Sbanken (DNB)',
 ];
 
-async function askClaude(prompt, maxTokens = 2048) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing');
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
 
-  const body = {
-    model:      MODEL,
-    max_tokens: maxTokens,
-    messages:   [{ role: 'user', content: prompt }],
-    tools:      [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
-  };
+async function askClaude(prompt, maxTokens = 1500) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY mangler');
 
   const res = await fetch(API_URL, {
     method:  'POST',
@@ -48,8 +44,14 @@ async function askClaude(prompt, maxTokens = 2048) {
       'anthropic-version': '2023-06-01',
       'content-type':      'application/json',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      model:      MODEL,
+      max_tokens: maxTokens,
+      messages:   [{ role: 'user', content: prompt }],
+      tools:      [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }],
+    }),
   });
+
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
     throw new Error(`Claude HTTP ${res.status}: ${txt.slice(0, 200)}`);
@@ -62,151 +64,184 @@ async function askClaude(prompt, maxTokens = 2048) {
     .trim();
 }
 
+/**
+ * Robust JSON extraction — tries multiple strategies.
+ */
 function extractJSON(text) {
-  const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
-  const m = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-  if (!m) return null;
-  try { return JSON.parse(m[1]); } catch { return null; }
+  // Strategy 1: strip markdown fences, find first [ or {
+  const stripped = text.replace(/```(?:json)?\s*/g, '').replace(/```\s*/g, '');
+
+  // Try to find JSON array
+  const arrMatch = stripped.match(/\[[\s\S]*\]/);
+  if (arrMatch) {
+    try { return JSON.parse(arrMatch[0]); } catch (_) {}
+  }
+  // Try to find JSON object
+  const objMatch = stripped.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    try { return JSON.parse(objMatch[0]); } catch (_) {}
+  }
+
+  // Strategy 2: find the largest balanced bracket block
+  for (const [open, close] of [['[', ']'], ['{', '}']]) {
+    let depth = 0, start = -1;
+    for (let i = 0; i < stripped.length; i++) {
+      if (stripped[i] === open)  { if (depth === 0) start = i; depth++; }
+      if (stripped[i] === close) { depth--; if (depth === 0 && start >= 0) {
+        try { return JSON.parse(stripped.slice(start, i + 1)); } catch (_) {}
+      }}
+    }
+  }
+  return null;
+}
+
+function parseRateArray(text, defaultLtvMax = 85) {
+  const parsed = extractJSON(text);
+  if (!Array.isArray(parsed)) {
+    console.error('  Råsvar (første 400 tegn):', text.slice(0, 400));
+    return null;
+  }
+  return parsed
+    .filter(r => r && r.bank && typeof r.rate === 'number' && r.rate > 0 && r.rate < 20)
+    .map(r => ({
+      bank:             String(r.bank),
+      rate:             Number(r.rate),
+      type:             r.type || 'flytende',
+      ltvMax:           r.ltvMax || defaultLtvMax,
+      requiresProducts: r.requiresProducts || '',
+    }));
+}
+
+function mortgagePrompt(banks) {
+  return `Finn dagens nominelle flytende boliglånsrente fra disse norske bankene på finansportalen.no eller bankenes egne nettsider: ${banks.join(', ')}.
+
+Svar KUN med et JSON-array (ingen annen tekst):
+[{"bank":"<navn>","rate":<prosent>,"type":"flytende","ltvMax":<ltv>,"requiresProducts":"<krav>"}]`;
 }
 
 async function fetchMortgageRates() {
-  const prompt = `Du er en finansekspert i Norge. Bruk web search for å finne dagens nominelle flytende boliglånsrente for hver av følgende norske banker. Sjekk bankenes egne nettsider eller finansportalen.no.
+  // Fetch in two batches, pause between
+  console.log('  Batch A...');
+  const textA = await askClaude(mortgagePrompt(BANKS_A), 1200);
+  const ratesA = parseRateArray(textA) || [];
+  console.log(`  Batch A: ${ratesA.length} renter`);
 
-Banker: ${BANKS_MORTGAGE.join(', ')}
+  console.log('  Venter 35s...');
+  await sleep(35000);
 
-Returner KUN et JSON-array:
+  console.log('  Batch B...');
+  const textB = await askClaude(mortgagePrompt(BANKS_B), 1200);
+  const ratesB = parseRateArray(textB) || [];
+  console.log(`  Batch B: ${ratesB.length} renter`);
 
-[
-  { "bank": "<banknavn>", "rate": <tall i %>, "type": "flytende", "ltvMax": <LTV% eller 85>, "requiresProducts": "<krav eller tom streng>" }
-]
-
-Ta med så mange du finner pålitelige tall for. Utelat banker du ikke finner eller er usikker på.`;
-
-  const text = await askClaude(prompt, 2048);
-  const arr  = extractJSON(text);
-  if (!Array.isArray(arr)) throw new Error('Could not parse mortgage response');
-  return arr.filter(r => r && r.bank && typeof r.rate === 'number' && r.rate > 0 && r.rate < 20)
-    .map(r => ({
-      bank: String(r.bank),
-      rate: Number(r.rate),
-      type: r.type || 'flytende',
-      ltvMax: r.ltvMax || 85,
-      requiresProducts: r.requiresProducts || '',
-    }));
+  // Merge, deduplicate on bank name
+  const merged = [...ratesA];
+  for (const r of ratesB) {
+    if (!merged.find(m => m.bank.toLowerCase() === r.bank.toLowerCase())) {
+      merged.push(r);
+    }
+  }
+  return merged;
 }
 
 async function fetchCarLoanRates() {
-  const prompt = `Du er en finansekspert i Norge. Bruk web search for å finne dagens nominelle flytende billånsrente fra de største norske bankene og finansieringsselskapene (Santander, Nordea Finans, DNB, SpareBank 1, Ya Bank, Instabank, BN Bank, osv.). Standard billån, ikke leasing.
+  const prompt = `Finn dagens nominelle flytende billånsrente fra norske banker og finansieringsselskaper (Santander, Nordea Finans, DNB, SpareBank 1, Ya Bank, Instabank, BN Bank) på finansportalen.no eller bankenes nettsider.
 
-Returner KUN et JSON-array:
+Svar KUN med et JSON-array (ingen annen tekst):
+[{"bank":"<navn>","rate":<prosent>,"type":"flytende","ltvMax":80,"requiresProducts":"<krav>"}]`;
 
-[
-  { "bank": "<banknavn>", "rate": <tall i %>, "type": "flytende", "ltvMax": 80, "requiresProducts": "<krav eller tom>" }
-]`;
-
-  const text = await askClaude(prompt, 2048);
-  const arr  = extractJSON(text);
-  if (!Array.isArray(arr)) throw new Error('Could not parse car-loan response');
-  return arr.filter(r => r && r.bank && typeof r.rate === 'number' && r.rate > 0 && r.rate < 20)
-    .map(r => ({
-      bank: String(r.bank),
-      rate: Number(r.rate),
-      type: r.type || 'flytende',
-      ltvMax: r.ltvMax || 80,
-      requiresProducts: r.requiresProducts || '',
-    }));
+  const text = await askClaude(prompt, 1000);
+  return parseRateArray(text, 80);
 }
 
 async function fetchStudentLoanRate() {
-  const prompt = `Du er en finansekspert i Norge. Bruk web search for å finne dagens rente på studielån hos Lånekassen (flytende og fast). Sjekk lanekassen.no.
+  const prompt = `Finn dagens rente på studielån fra Lånekassen på lanekassen.no.
 
-Returner KUN et JSON-objekt:
+Svar KUN med et JSON-objekt (ingen annen tekst):
+{"floatingRate":<prosent>,"fixedRate3y":<prosent eller null>,"fixedRate5y":<prosent eller null>,"fixedRate10y":<prosent eller null>}`;
 
-{ "floatingRate": <tall i %>, "fixedRate3y": <tall eller null>, "fixedRate5y": <tall eller null>, "fixedRate10y": <tall eller null>, "asOfDate": "<YYYY-MM-DD>" }`;
-
-  const text = await askClaude(prompt, 800);
+  const text = await askClaude(prompt, 600);
   const obj  = extractJSON(text);
-  if (!obj || typeof obj.floatingRate !== 'number') throw new Error('Could not parse student loan response');
+  if (!obj || typeof obj.floatingRate !== 'number') {
+    console.error('  Råsvar:', text.slice(0, 300));
+    throw new Error('Kunne ikke tolke Lånekassen-renter');
+  }
   return obj;
 }
 
-async function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
 async function main() {
-  console.log('Fetching rates via Claude (sequentially to avoid rate limits)...');
+  console.log('=== Henter norske bankrenter (sekvensielt) ===');
 
-  console.log('1/3 Fetching mortgage rates...');
+  // Load existing data as fallback
+  let existing = { mortgage: [], car_loan: [], student_loan: [] };
+  try {
+    existing = JSON.parse(fs.readFileSync(OUTFILE, 'utf8'));
+    console.log(`Eksisterende data: ${existing.mortgage?.length} boliglån, ${existing.car_loan?.length} billån, ${existing.student_loan?.length} studielån`);
+  } catch (_) { console.log('Ingen eksisterende data.'); }
+
+  // 1. Mortgage (two batches with internal pause)
+  console.log('\n1/3 Boliglånsrenter...');
   let mortgage = [];
   try {
     mortgage = await fetchMortgageRates();
-    console.log(`  ✅ ${mortgage.length} mortgage rates`);
+    console.log(`✅ ${mortgage.length} boliglånsrenter`);
   } catch (err) {
-    console.error('  ❌ mortgage:', err.message);
+    console.error('❌ Boliglån feilet:', err.message);
+    mortgage = existing.mortgage || [];
+    console.log(`  Beholder ${mortgage.length} eksisterende`);
   }
 
-  console.log('Waiting 15s before next call...');
-  await sleep(15000);
+  console.log('\nVenter 35s...');
+  await sleep(35000);
 
-  console.log('2/3 Fetching car loan rates...');
+  // 2. Car loans
+  console.log('\n2/3 Billånsrenter...');
   let carLoan = [];
   try {
     carLoan = await fetchCarLoanRates();
-    console.log(`  ✅ ${carLoan.length} car loan rates`);
+    if (!carLoan || !carLoan.length) throw new Error('Tomt svar');
+    console.log(`✅ ${carLoan.length} billånsrenter`);
   } catch (err) {
-    console.error('  ❌ car_loan:', err.message);
+    console.error('❌ Billån feilet:', err.message);
+    carLoan = existing.car_loan || [];
+    console.log(`  Beholder ${carLoan.length} eksisterende`);
   }
 
-  console.log('Waiting 15s before next call...');
-  await sleep(15000);
+  console.log('\nVenter 35s...');
+  await sleep(35000);
 
-  console.log('3/3 Fetching student loan rate...');
-  let student = null;
-  try {
-    student = await fetchStudentLoanRate();
-    console.log(`  ✅ student rate: ${student?.floatingRate}%`);
-  } catch (err) {
-    console.error('  ❌ student:', err.message);
-  }
-
-  // Build student-loan rate list
+  // 3. Student loans
+  console.log('\n3/3 Lånekassen...');
   const studentRates = [];
-  if (student && student.floatingRate) {
-    studentRates.push({ bank: 'Lånekassen (flytende)', rate: student.floatingRate, type: 'flytende', ltvMax: 100, requiresProducts: '' });
+  try {
+    const student = await fetchStudentLoanRate();
+    if (student.floatingRate) studentRates.push({ bank: 'Lånekassen (flytende)', rate: student.floatingRate, type: 'flytende', ltvMax: 100, requiresProducts: '' });
     if (student.fixedRate3y)  studentRates.push({ bank: 'Lånekassen (fast 3 år)',  rate: student.fixedRate3y,  type: 'fast', ltvMax: 100, requiresProducts: '' });
     if (student.fixedRate5y)  studentRates.push({ bank: 'Lånekassen (fast 5 år)',  rate: student.fixedRate5y,  type: 'fast', ltvMax: 100, requiresProducts: '' });
     if (student.fixedRate10y) studentRates.push({ bank: 'Lånekassen (fast 10 år)', rate: student.fixedRate10y, type: 'fast', ltvMax: 100, requiresProducts: '' });
+    console.log(`✅ ${studentRates.length} Lånekassen-renter`);
+  } catch (err) {
+    console.error('❌ Lånekassen feilet:', err.message);
+    studentRates.push(...(existing.student_loan || []));
+    console.log(`  Beholder ${studentRates.length} eksisterende`);
   }
 
-  // Don't overwrite existing data if all three failed
-  if (!mortgage.length && !carLoan.length && !studentRates.length) {
-    console.error('❌ All fetches failed – keeping existing rates.json');
-    process.exit(1);
-  }
-
-  // If some fetches failed, preserve existing data for those categories
-  let existing = { mortgage: [], car_loan: [], student_loan: [] };
-  try {
-    existing = JSON.parse(require('fs').readFileSync(OUTFILE, 'utf8'));
-    console.log('Loaded existing rates for fallback');
-  } catch (_) {}
-
+  // Write output
   const out = {
     updatedAt:    new Date().toISOString(),
     source:       'Claude API web search (weekly)',
-    mortgage:     mortgage.length   ? mortgage.sort((a, b) => a.rate - b.rate)   : existing.mortgage   || [],
-    car_loan:     carLoan.length    ? carLoan.sort((a, b) => a.rate - b.rate)    : existing.car_loan   || [],
-    student_loan: studentRates.length ? studentRates                             : existing.student_loan || [],
+    mortgage:     mortgage.sort((a, b) => a.rate - b.rate),
+    car_loan:     carLoan.sort((a, b) => a.rate - b.rate),
+    student_loan: studentRates,
   };
 
   fs.mkdirSync(path.dirname(OUTFILE), { recursive: true });
   fs.writeFileSync(OUTFILE, JSON.stringify(out, null, 2) + '\n');
-
-  console.log(`✅ Wrote ${OUTFILE}: ${out.mortgage.length} mortgage, ${out.car_loan.length} car, ${out.student_loan.length} student`);
+  console.log(`\n✅ Skrevet til ${OUTFILE}`);
+  console.log(`   Boliglån: ${out.mortgage.length}, Billån: ${out.car_loan.length}, Studielån: ${out.student_loan.length}`);
 }
 
 main().catch(err => {
-  console.error('Failed:', err.message);
+  console.error('Kritisk feil:', err.message);
   process.exit(1);
 });
