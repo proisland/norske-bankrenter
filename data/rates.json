@@ -1,33 +1,33 @@
 {
-  "updatedAt": "2026-05-04T09:23:53.971Z",
+  "updatedAt": "2026-05-11T10:41:15.870Z",
   "source": "Claude API web search (weekly)",
   "mortgage": [],
   "car_loan": [],
   "student_loan": [
     {
       "bank": "Lånekassen (flytende)",
-      "rate": 4.621,
+      "rate": 4.611,
       "type": "flytende",
       "ltvMax": 100,
       "requiresProducts": ""
     },
     {
       "bank": "Lånekassen (fast 3 år)",
-      "rate": 4.736,
+      "rate": 4.908,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
     },
     {
       "bank": "Lånekassen (fast 5 år)",
-      "rate": 4.745,
+      "rate": 4.889,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
     },
     {
       "bank": "Lånekassen (fast 10 år)",
-      "rate": 4.755,
+      "rate": 4.879,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
