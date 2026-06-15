@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-08T12:00:52.930Z",
+  "updatedAt": "2026-06-15T13:17:48.122Z",
   "source": "Claude API web search (weekly)",
   "mortgage": [],
   "car_loan": [],
@@ -27,7 +27,7 @@
     },
     {
       "bank": "Lånekassen (fast 10 år)",
-      "rate": 4.879,
+      "rate": 4.824,
       "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
