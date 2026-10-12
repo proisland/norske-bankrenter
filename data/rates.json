@@ -1,8 +1,72 @@
 {
-  "updatedAt": "2026-10-05T15:38:36.485Z",
+  "updatedAt": "2026-10-12T16:34:42.400Z",
   "source": "Claude API web search (weekly)",
   "mortgage": [],
-  "car_loan": [],
+  "car_loan": [
+    {
+      "bank": "DNB Bank",
+      "rate": 6.24,
+      "type": "flytende",
+      "ltvMax": 65,
+      "requiresProducts": "DNB Billån Ung 35% EK"
+    },
+    {
+      "bank": "DNB Bank",
+      "rate": 6.34,
+      "type": "flytende",
+      "ltvMax": 65,
+      "requiresProducts": "DNB Billån 35% EK"
+    },
+    {
+      "bank": "Nordea Finans",
+      "rate": 6.35,
+      "type": "flytende",
+      "ltvMax": 65,
+      "requiresProducts": "NAF Billån, 35% EK"
+    },
+    {
+      "bank": "Santander Consumer Bank",
+      "rate": 6.45,
+      "type": "flytende",
+      "ltvMax": 80,
+      "requiresProducts": "Standard Billån 65%"
+    },
+    {
+      "bank": "SpareBank 1",
+      "rate": 6.7,
+      "type": "flytende",
+      "ltvMax": 80,
+      "requiresProducts": "LOfavør Elbil 20-35% EK"
+    },
+    {
+      "bank": "BN Bank",
+      "rate": 7,
+      "type": "flytende",
+      "ltvMax": 80,
+      "requiresProducts": "Levert av SpareBank 1 Finans"
+    },
+    {
+      "bank": "Sbanken (DNB)",
+      "rate": 7.25,
+      "type": "flytende",
+      "ltvMax": 80,
+      "requiresProducts": "Billån 80%, krever pakke"
+    },
+    {
+      "bank": "Santander Consumer Bank",
+      "rate": 8.05,
+      "type": "flytende",
+      "ltvMax": 80,
+      "requiresProducts": "Standard Billån 80%"
+    },
+    {
+      "bank": "Santander Consumer Bank",
+      "rate": 9.05,
+      "type": "flytende",
+      "ltvMax": 100,
+      "requiresProducts": "Standard Billån 100%"
+    }
+  ],
   "student_loan": [
     {
       "bank": "Lånekassen (flytende)",
