@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-12T16:34:42.400Z",
+  "updatedAt": "2026-10-19T14:26:02.192Z",
   "source": "Claude API web search (weekly)",
   "mortgage": [],
   "car_loan": [
@@ -72,6 +72,27 @@
       "bank": "Lånekassen (flytende)",
       "rate": 4.602,
       "type": "flytende",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Lånekassen (fast 3 år)",
+      "rate": 5.233,
+      "type": "fast",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Lånekassen (fast 5 år)",
+      "rate": 5.099,
+      "type": "fast",
+      "ltvMax": 100,
+      "requiresProducts": ""
+    },
+    {
+      "bank": "Lånekassen (fast 10 år)",
+      "rate": 4.946,
+      "type": "fast",
       "ltvMax": 100,
       "requiresProducts": ""
     }
